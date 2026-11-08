@@ -26,6 +26,28 @@ def get_grade(mark):
         return "E"
 
 
+MAX_NAME_LENGTH = 50
+
+
+def validate_name(raw_name):
+    """Return (cleaned_name, error_message). error_message is None if valid."""
+    # Collapse surrounding and repeated internal whitespace
+    cleaned = " ".join(raw_name.split())
+
+    if not cleaned:
+        return cleaned, "Please enter a student name."
+    if not any(ch.isalpha() for ch in cleaned):
+        return cleaned, "Student name must contain at least one letter."
+    if len(cleaned) > MAX_NAME_LENGTH:
+        return cleaned, f"Student name must be {MAX_NAME_LENGTH} characters or fewer."
+
+    existing = {s["Name"].casefold() for s in st.session_state.students}
+    if cleaned.casefold() in existing:
+        return cleaned, f"A student named '{cleaned}' has already been added."
+
+    return cleaned, None
+
+
 st.title("🎓 Student Grade Manager")
 st.write("Add students, calculate grades, and view class performance.")
 
@@ -43,15 +65,16 @@ with st.form("student_form"):
     submitted = st.form_submit_button("Add Student")
 
     if submitted:
-        if not name.strip():
-            st.error("Please enter a student name.")
+        clean_name, error = validate_name(name)
+        if error:
+            st.error(error)
         else:
             st.session_state.students.append({
-                "Name": name.strip(),
+                "Name": clean_name,
                 "Mark": mark,
                 "Grade": get_grade(mark)
             })
-            st.success(f"{name.strip()} added successfully!")
+            st.success(f"{clean_name} added successfully!")
 
 # Show student results
 st.subheader("Student Results")
